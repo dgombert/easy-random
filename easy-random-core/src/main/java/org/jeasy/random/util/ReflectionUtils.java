@@ -153,6 +153,29 @@ public final class ReflectionUtils {
         field.set(object, value);
         field.setAccessible(access);
     }
+    
+    /**
+     * Get a value of a field of a target object. If the target object provides 
+     * a getter for the field, this getter will be used. Otherwise, the field
+     * will be get using reflection.
+     *
+     * @param object instance to get the property value
+     * @param field  field to get the property value
+     * @throws IllegalAccessException if the property cannot be set
+     */
+    public static Object getProperty(final Object object, final Field field) throws IllegalAccessException {
+        try {
+            Optional<Method> getter = getReadMethod(field);
+            if (getter.isPresent()) {
+                return getter.get().invoke(object);
+            } else {
+                return getFieldValue(object, field);
+            }
+        } catch (IllegalAccessException | InvocationTargetException  e) {
+            // otherwise, set field using reflection
+            return getFieldValue(object, field);
+        }
+    }
 
     /**
      * Get the value (accessible or not accessible) of a field of a target object.
@@ -162,7 +185,7 @@ public final class ReflectionUtils {
      * @return the value of the field
      * @throws IllegalAccessException if field cannot be accessed
      */
-    public static Object getFieldValue(final Object object, final Field field) throws IllegalAccessException {
+    public static Object getFieldValue(final Object object, final Field field) throws IllegalAccessException{
         boolean access = field.trySetAccessible();
         Object value = field.get(object);
         field.setAccessible(access);
@@ -198,7 +221,7 @@ public final class ReflectionUtils {
         if (!fieldType.isPrimitive()) {
             return false;
         }
-        Object fieldValue = getFieldValue(object, field);
+        Object fieldValue = getProperty(object, field);
         if (fieldValue == null) {
             return false;
         }
